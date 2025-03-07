@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.Period;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -27,7 +26,7 @@ public class NicServiceImpl implements NicService {
 
     final FileRepository fileRepository;
 
-    final ModelMapper  mapper;
+    final ModelMapper mapper;
 
 
     @Override
@@ -71,6 +70,11 @@ public class NicServiceImpl implements NicService {
     @Override
     public List<Nic> getAllNicDetails() {
         return nicRepository.findAll();
+    }
+
+    @Override
+    public int getNicCount() {
+        return (int) nicRepository.count();
     }
 
 
@@ -128,7 +132,6 @@ public class NicServiceImpl implements NicService {
         entity.setNicNumber(nic);
         return entity;
     }
-
 
 
 }

@@ -10,4 +10,6 @@ public interface NicService {
     boolean  saveCsv(MultipartFile[] files);
 
     List<Nic> getAllNicDetails();
+
+    int getNicCount();
 }
