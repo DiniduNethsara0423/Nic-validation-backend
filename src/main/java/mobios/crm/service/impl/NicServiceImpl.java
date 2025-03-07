@@ -67,46 +67,59 @@ public class NicServiceImpl implements NicService {
     }
 
 
-    private Nic validateNic(String column) {
-        String bornYear;
-        String birthDayOfTheYear;
+    private Nic validateNic(String nic) {
+        Nic entity = new Nic();
         String gender = "MALE";
+        int birthYear, dayValue;
 
-        if (column.matches("\\d{12}")) {
-
-            // Extract year and day of the year from the NIC
-            bornYear = column.substring(0, 4);
-            birthDayOfTheYear = column.substring(4, 7);
-
-            // Female block: If the day of the year is greater than 500, it's a female
-            if (Integer.parseInt(birthDayOfTheYear) > 500) {
-                gender = "FEMALE";
-
-                // Adjust the day of the year for females (subtract 500)
-                birthDayOfTheYear = String.format("%03d", Integer.parseInt(birthDayOfTheYear) - 500);
-            }
-
-            // Combine year and day of the year to form a full date (yyyyDDD format)
-            String fullDate = bornYear + birthDayOfTheYear;
-
-            // Parse the full date to LocalDate using the "yyyyDDD" pattern
-            LocalDate date = LocalDate.parse(fullDate, DateTimeFormatter.ofPattern("yyyyDDD"));
-
-            // Calculate the age based on the date of birth
-            int age = Period.between(date, LocalDate.now()).getYears();
-
-            // Create an instance of CsvDao using the constructor and set values manually
-            Nic entity = new Nic();
-            entity.setAge(Integer.parseInt(String.valueOf(age)));  // Convert int to String
-            entity.setBirthday(String.valueOf(date));
-            entity.setGender(gender);
-            entity.setAge(Integer.parseInt(column));  // Assuming 'column' is the NIC string
-
-            // Return the populated CsvDao object
-            return entity;
+        if (nic.matches("\\d{12}")) {
+            // Handle new NIC format (12 digits)
+            birthYear = Integer.parseInt(nic.substring(0, 4));
+            dayValue = Integer.parseInt(nic.substring(4, 7));
+        } else if (nic.matches("\\d{9}[VXvx]")) {
+            // Handle old NIC format (9 digits + V/X)
+            birthYear = 1900 + Integer.parseInt(nic.substring(0, 2));
+            dayValue = Integer.parseInt(nic.substring(2, 5));
         } else {
-            return null;
+            return null; // Invalid NIC
         }
+
+        // Determine gender and adjust day value
+        if (dayValue > 500) {
+            gender = "FEMALE";
+            dayValue -= 500;
+        }
+
+        // Calculate birth date
+        int month = 0, day = 0;
+        int[] daysInMonth = {0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        int daysAccumulated = 0;
+        for (int i = 1; i <= 12; i++) {
+            if (dayValue <= daysAccumulated + daysInMonth[i]) {
+                month = i;
+                day = dayValue - daysAccumulated;
+                break;
+            }
+            daysAccumulated += daysInMonth[i];
+        }
+
+        // Adjust for leap years
+        boolean isLeapYear = (birthYear % 4 == 0 && birthYear % 100 != 0) || (birthYear % 400 == 0);
+        if (month == 2 && day == 29 && !isLeapYear) {
+            month = 3;
+            day = 1;
+        }
+
+        // Create date object
+        LocalDate birthDate = LocalDate.of(birthYear, month, day);
+        int age = Period.between(birthDate, LocalDate.now()).getYears();
+
+        // Set entity properties
+        entity.setAge(age);
+        entity.setBirthday(birthDate.toString());
+        entity.setGender(gender);
+        entity.setNicNumber(nic);
+        return entity;
     }
 
 
