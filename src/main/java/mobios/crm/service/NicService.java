@@ -1,5 +1,6 @@
 package mobios.crm.service;
 
+import mobios.crm.dto.NicDto;
 import mobios.crm.entity.Nic;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,4 +15,5 @@ public interface NicService {
     int getNicCount();
     long getMaleCount();
     long getfemaleCount();
+    List<NicDto> getNicsByFileName(String fileName);
 }

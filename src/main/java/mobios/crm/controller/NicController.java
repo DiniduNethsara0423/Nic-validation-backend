@@ -2,6 +2,7 @@ package mobios.crm.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import mobios.crm.dto.NicDto;
 import mobios.crm.entity.Nic;
 import mobios.crm.service.NicService;
 import org.springframework.http.ResponseEntity;
@@ -43,5 +44,10 @@ public class NicController {
     @GetMapping("/getFemaleCount")
     public ResponseEntity<Long> getFemaleCount (){
         return ResponseEntity.ok((long) nicService.getfemaleCount());
+    }
+    @GetMapping("/getByFileName/{fileName}")
+    public List<NicDto> getNicsByFileName(@PathVariable("fileName") String fileName) {
+        //List<Nic> nics = nicService.getNicsByFileName(fileName);
+        return nicService.getNicsByFileName(fileName);
     }
 }

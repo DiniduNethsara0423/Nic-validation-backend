@@ -3,6 +3,7 @@ package mobios.crm.service.impl;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import lombok.RequiredArgsConstructor;
+import mobios.crm.dto.NicDto;
 import mobios.crm.entity.File;
 import mobios.crm.entity.Nic;
 import mobios.crm.repository.FileRepository;
@@ -16,6 +17,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 @Service
@@ -36,12 +40,13 @@ public class NicServiceImpl implements NicService {
                 String fileName = file.getOriginalFilename(); // Extract file name
 
                 // Check if file already exists in the database
-                File existingFile = fileRepository.findByFileName(fileName);
-                if (existingFile == null) {
-                    existingFile = new File();
-                    existingFile.setFileName(fileName);
+                File existingFile = fileRepository.findByFileName(fileName)
+                        .orElseGet(() -> {
+                            File newFile = new File();
+                            newFile.setFileName(fileName);
+                            return newFile;
+                        });
 
-                }
 
                 CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()));
                 List<String[]> csvFiles = csvReader.readAll();
@@ -85,6 +90,23 @@ public class NicServiceImpl implements NicService {
     @Override
     public long getfemaleCount() {
         return nicRepository.countByGender("female");
+    }
+
+    @Override
+    public List<NicDto> getNicsByFileName(String fileName) {
+        List<NicDto> nicDtos=new ArrayList<>();
+        Iterable<Nic> nics = fileRepository.findByFileName(fileName)
+                .map(File::getNics)
+                .orElse(Collections.emptyList());
+        Iterator<Nic> iterator = nics.iterator();
+        while(iterator.hasNext()){
+            Nic next = iterator.next();
+            NicDto map = mapper.map(next, NicDto.class);
+            nicDtos.add(map);
+
+        }
+        return nicDtos;
+
     }
 
 

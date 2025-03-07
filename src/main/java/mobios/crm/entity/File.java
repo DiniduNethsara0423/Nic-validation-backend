@@ -17,7 +17,7 @@ public class File {
     private Long id;
     private String fileName;
 
-    @OneToMany(mappedBy = "file",cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "file",cascade = CascadeType.ALL,fetch=FetchType.LAZY)
     private List<Nic> nics;
 
 }
