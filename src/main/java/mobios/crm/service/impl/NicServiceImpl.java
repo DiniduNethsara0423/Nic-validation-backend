@@ -82,6 +82,11 @@ public class NicServiceImpl implements NicService {
         return nicRepository.countByGender("male");
     }
 
+    @Override
+    public long getfemaleCount() {
+        return nicRepository.countByGender("female");
+    }
+
 
     private Nic validateNic(String nic) {
         Nic entity = new Nic();

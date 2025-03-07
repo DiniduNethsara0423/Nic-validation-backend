@@ -13,4 +13,5 @@ public interface NicService {
 
     int getNicCount();
     long getMaleCount();
+    long getfemaleCount();
 }
