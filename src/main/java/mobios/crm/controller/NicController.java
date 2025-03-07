@@ -34,4 +34,9 @@ public class NicController {
     public ResponseEntity<Long> getTotalNicCount(){
         return ResponseEntity.ok((long) nicService.getNicCount());
     }
+
+    @GetMapping("/getMaleCount")
+    public ResponseEntity<Long> getMaleCount (){
+        return ResponseEntity.ok((long) nicService.getMaleCount());
+    }
 }

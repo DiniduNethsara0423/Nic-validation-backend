@@ -12,4 +12,5 @@ public interface NicService {
     List<Nic> getAllNicDetails();
 
     int getNicCount();
+    long getMaleCount();
 }
