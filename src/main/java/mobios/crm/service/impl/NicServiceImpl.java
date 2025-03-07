@@ -3,7 +3,9 @@ package mobios.crm.service.impl;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import lombok.RequiredArgsConstructor;
+import mobios.crm.entity.File;
 import mobios.crm.entity.Nic;
+import mobios.crm.repository.FileRepository;
 import mobios.crm.repository.NicRepository;
 import mobios.crm.service.NicService;
 import org.modelmapper.ModelMapper;
@@ -21,49 +23,53 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NicServiceImpl implements NicService {
 
-    final NicRepository repository;
+    final NicRepository nicRepository;
+
+    final FileRepository fileRepository;
 
     final ModelMapper  mapper;
 
 
     @Override
     public boolean saveCsv(MultipartFile[] files) {
-        for (MultipartFile file:files){
-
+        for (MultipartFile file : files) {
             try {
+                String fileName = file.getOriginalFilename(); // Extract file name
+
+                // Check if file already exists in the database
+                File existingFile = fileRepository.findByFileName(fileName);
+                if (existingFile == null) {
+                    existingFile = new File();
+                    existingFile.setFileName(fileName);
+                    existingFile = fileRepository.save(existingFile); // Save file record
+                }
+
                 CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()));
+                List<String[]> csvFiles = csvReader.readAll();
 
-                List<String[]> csvFiles= csvReader.readAll();
-
-                for (String[] row:csvFiles){
-
-                    for (String column:row){
-
-                        if(!(column.isEmpty())){
+                for (String[] row : csvFiles) {
+                    for (String column : row) {
+                        if (!column.isEmpty()) {
                             Nic nic = validateNic(column);
-                            if (null != nic) {
-                                repository.save(nic);
+                            if (nic != null) {
+                                nic.setFile(existingFile); // Associate with file
+                                nicRepository.save(nic); // Save NIC record
                             }
                         }
-
                     }
                 }
 
-
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (CsvException e) {
+            } catch (IOException | CsvException e) {
                 throw new RuntimeException(e);
             }
-
         }
-
-        return false;
+        return true;
     }
+
 
     @Override
     public List<Nic> getAllNicDetails() {
-        return repository.findAll();
+        return nicRepository.findAll();
     }
 
 
