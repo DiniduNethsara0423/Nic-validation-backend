@@ -2,9 +2,12 @@ package mobios.crm.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import mobios.crm.entity.Nic;
 import mobios.crm.service.NicService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/nic")
@@ -13,11 +16,16 @@ import org.springframework.web.multipart.MultipartFile;
 @CrossOrigin
 public class NicController {
 
-    final NicService service;
+    final NicService nicService;
+
 
     @PostMapping
     public boolean saveCsv(@RequestParam("csv")MultipartFile[] files){
-        service.saveCsv(files);
-return true;
+        return nicService.saveCsv(files);
+    }
+
+    @GetMapping("/get-all")
+    public List<Nic> getAll(){
+        return nicService.getAllNicDetails();
     }
 }

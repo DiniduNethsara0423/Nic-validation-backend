@@ -61,6 +61,12 @@ public class NicServiceImpl implements NicService {
         return false;
     }
 
+    @Override
+    public List<Nic> getAllNicDetails() {
+        return repository.findAll();
+    }
+
+
     private Nic validateNic(String column) {
         String bornYear;
         String birthDayOfTheYear;

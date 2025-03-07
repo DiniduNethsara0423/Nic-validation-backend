@@ -8,5 +8,6 @@ import java.util.List;
 public interface NicService {
 
     boolean  saveCsv(MultipartFile[] files);
-//    List<Nic> getAllNicDetails();
+
+    List<Nic> getAllNicDetails();
 }
