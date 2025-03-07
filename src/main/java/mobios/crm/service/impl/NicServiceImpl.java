@@ -41,7 +41,7 @@ public class NicServiceImpl implements NicService {
                 if (existingFile == null) {
                     existingFile = new File();
                     existingFile.setFileName(fileName);
-                    existingFile = fileRepository.save(existingFile); // Save file record
+
                 }
 
                 CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()));
@@ -54,6 +54,7 @@ public class NicServiceImpl implements NicService {
                             if (nic != null) {
                                 nic.setFile(existingFile); // Associate with file
                                 nicRepository.save(nic); // Save NIC record
+                                existingFile = fileRepository.save(existingFile); // Save file record
                             }
                         }
                     }
