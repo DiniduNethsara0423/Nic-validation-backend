@@ -14,4 +14,8 @@ public class FileServiceImpl implements FileService {
 
     final ModelMapper mapper;
 
+    @Override
+    public long getFileCount() {
+        return repository.count();
+    }
 }
