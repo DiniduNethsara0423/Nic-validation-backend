@@ -61,4 +61,15 @@ public class NicController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=nics.pdf")
                 .body(pdf);
     }
+
+    @GetMapping("/export/csv/{fileName}")
+    public ResponseEntity<byte[]> exportCsv(@PathVariable String fileName) {
+        byte[] csv = nicService.generateCsv(fileName);
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_PLAIN)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=nics.csv")
+                .body(csv);
+    }
+
+
 }

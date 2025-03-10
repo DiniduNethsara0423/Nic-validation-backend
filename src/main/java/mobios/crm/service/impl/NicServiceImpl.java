@@ -21,6 +21,7 @@ import javax.swing.text.Document;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
@@ -163,6 +164,24 @@ public class NicServiceImpl implements NicService {
         }
     }
 
+    @Override
+    public byte[] generateCsv(String fileName) {
+        List<NicDto> nicDtos = getNicsByFileName(fileName);
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+             PrintWriter writer = new PrintWriter(outputStream)) {
+            writer.println("Age,Birthday,Gender,NIC Number");
+            for (NicDto nic : nicDtos) {
+                writer.println(nic.getAge() + "," +
+                        nic.getBirthday() + "," +
+                        nic.getGender() + "," +
+                        (nic.getNicNumber() != null ? nic.getNicNumber() : "N/A"));
+            }
+            writer.flush();
+            return outputStream.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating CSV", e);
+        }
+    }
 
 
     private Nic validateNic(String nic) {
