@@ -9,10 +9,16 @@ import mobios.crm.entity.Nic;
 import mobios.crm.repository.FileRepository;
 import mobios.crm.repository.NicRepository;
 import mobios.crm.service.NicService;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.swing.text.Document;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
@@ -40,12 +46,11 @@ public class NicServiceImpl implements NicService {
                 String fileName = file.getOriginalFilename(); // Extract file name
 
                 // Check if file already exists in the database
-                File existingFile = fileRepository.findByFileName(fileName)
-                        .orElseGet(() -> {
-                            File newFile = new File();
-                            newFile.setFileName(fileName);
-                            return newFile;
-                        });
+                File existingFile = fileRepository.findByFileName(fileName).orElseGet(() -> {
+                    File newFile = new File();
+                    newFile.setFileName(fileName);
+                    return newFile;
+                });
 
 
                 CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()));
@@ -94,12 +99,10 @@ public class NicServiceImpl implements NicService {
 
     @Override
     public List<NicDto> getNicsByFileName(String fileName) {
-        List<NicDto> nicDtos=new ArrayList<>();
-        Iterable<Nic> nics = fileRepository.findByFileName(fileName)
-                .map(File::getNics)
-                .orElse(Collections.emptyList());
+        List<NicDto> nicDtos = new ArrayList<>();
+        Iterable<Nic> nics = fileRepository.findByFileName(fileName).map(File::getNics).orElse(Collections.emptyList());
         Iterator<Nic> iterator = nics.iterator();
-        while(iterator.hasNext()){
+        while (iterator.hasNext()) {
             Nic next = iterator.next();
             NicDto map = mapper.map(next, NicDto.class);
             nicDtos.add(map);
@@ -109,8 +112,61 @@ public class NicServiceImpl implements NicService {
 
     }
 
+    @Override
+    public byte[] generatePdf(String fileName) {
+        List<NicDto> nicDtos = getNicsByFileName(fileName);
+
+        try (PDDocument document = new PDDocument();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+
+            PDPage page = new PDPage();
+            document.addPage(page);
+
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
+                contentStream.beginText();
+                contentStream.newLineAtOffset(50, 750);
+                contentStream.showText("NIC Report");
+                contentStream.endText();
+
+                float startY = 700;
+                contentStream.setFont(PDType1Font.HELVETICA, 10);
+
+                for (NicDto nicDto : nicDtos) {
+                    if (startY < 50) { // Create new page if space is low
+                        contentStream.close();
+                        page = new PDPage();
+                        document.addPage(page);
+                        contentStream.close();
+                        try (PDPageContentStream newContentStream = new PDPageContentStream(document, page)) {
+                            contentStream.setFont(PDType1Font.HELVETICA, 10);
+                            startY = 750;  // Reset start position for new page
+                        }
+                    }
+
+                    contentStream.beginText();
+                    contentStream.newLineAtOffset(50, startY);
+                    contentStream.showText(nicDto.getAge() + " | " +
+                            nicDto.getBirthday() + " | " +
+                            nicDto.getGender() + " | " +
+                            (nicDto.getNicNumber() != null ? nicDto.getNicNumber() : "N/A"));
+                    contentStream.endText();
+                    startY -= 20;
+                }
+            }
+
+            document.save(outputStream);
+            return outputStream.toByteArray();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Error generating PDF", e);
+        }
+    }
+
+
 
     private Nic validateNic(String nic) {
+
         Nic entity = new Nic();
         String gender = "MALE";
         int birthYear, dayValue;

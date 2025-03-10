@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import mobios.crm.dto.NicDto;
 import mobios.crm.entity.Nic;
 import mobios.crm.service.NicService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -49,5 +51,14 @@ public class NicController {
     public List<NicDto> getNicsByFileName(@PathVariable("fileName") String fileName) {
         //List<Nic> nics = nicService.getNicsByFileName(fileName);
         return nicService.getNicsByFileName(fileName);
+    }
+
+    @GetMapping("/export/pdf/{fileName}")
+    public ResponseEntity<byte[]> exportPdf(@PathVariable String fileName) {
+        byte[] pdf = nicService.generatePdf(fileName);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=nics.pdf")
+                .body(pdf);
     }
 }

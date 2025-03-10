@@ -16,4 +16,6 @@ public interface NicService {
     long getMaleCount();
     long getfemaleCount();
     List<NicDto> getNicsByFileName(String fileName);
+    byte [] generatePdf(String fileName);
+
 }
