@@ -18,5 +18,6 @@ public interface NicService {
     List<NicDto> getNicsByFileName(String fileName);
     byte [] generatePdf(String fileName);
      byte[] generateCsv(String fileName) ;
+    byte[] generateXlsx(String fileName);
 
 }

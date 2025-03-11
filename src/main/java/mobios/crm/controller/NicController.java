@@ -71,5 +71,14 @@ public class NicController {
                 .body(csv);
     }
 
+    @GetMapping("/export/xlsx/{fileName}")
+    public ResponseEntity<byte[]> exportXlsx(@PathVariable String fileName) {
+        byte[] csv = nicService.generateXlsx(fileName);
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_PLAIN)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=nics.xlsx")
+                .body(csv);
+    }
+
 
 }

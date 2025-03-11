@@ -1,5 +1,6 @@
 package mobios.crm.service.impl;
 
+
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,11 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -180,6 +186,34 @@ public class NicServiceImpl implements NicService {
             return outputStream.toByteArray();
         } catch (Exception e) {
             throw new RuntimeException("Error generating CSV", e);
+        }
+    }
+
+    @Override
+    public byte[] generateXlsx(String fileName) {
+        List<NicDto> nicDtos = getNicsByFileName(fileName);
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("NIC Report");
+            Row header = (Row) sheet.createRow(0);
+            header.createCell(0).setCellValue("Age");
+            header.createCell(1).setCellValue("Birthday");
+            header.createCell(2).setCellValue("Gender");
+            header.createCell(3).setCellValue("NIC Number");
+
+            int rowIdx = 1;
+            for (NicDto nic : nicDtos) {
+                Row row = (Row) sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(nic.getAge());
+                row.createCell(1).setCellValue(nic.getBirthday().toString());
+                row.createCell(2).setCellValue(nic.getGender());
+                row.createCell(3).setCellValue(nic.getNicNumber() != null ? nic.getNicNumber() : "N/A");
+            }
+
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating XLSX", e);
         }
     }
 
