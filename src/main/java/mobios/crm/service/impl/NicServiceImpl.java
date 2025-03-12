@@ -85,8 +85,17 @@ public class NicServiceImpl implements NicService {
 
 
     @Override
-    public List<Nic> getAllNicDetails() {
-        return nicRepository.findAll();
+    public List<NicDto> getAllNicDetails() {
+        List<NicDto> nicDtos=new ArrayList<>();
+        Iterable<Nic> all = nicRepository.findAll();
+        Iterator<Nic> iterator = all.iterator();
+        while (iterator.hasNext()){
+            Nic next = iterator.next();
+            NicDto map = mapper.map(next, NicDto.class);
+            nicDtos.add(map);
+        }
+        return nicDtos;
+
     }
 
     @Override

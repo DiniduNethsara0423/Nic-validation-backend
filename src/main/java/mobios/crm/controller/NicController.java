@@ -29,7 +29,7 @@ public class NicController {
     }
 
     @GetMapping("/get-all")
-    public List<Nic> getAll(){
+    public List<NicDto> getAll(){
         return nicService.getAllNicDetails();
     }
 
