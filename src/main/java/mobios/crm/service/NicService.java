@@ -1,14 +1,14 @@
 package mobios.crm.service;
 
 import mobios.crm.dto.NicDto;
-import mobios.crm.entity.Nic;
+import mobios.crm.dto.NicProcessingResponseDto;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 public interface NicService {
 
-    boolean  saveCsv(MultipartFile[] files);
+    NicProcessingResponseDto saveCsv(MultipartFile[] files);
 
     List<NicDto> getAllNicDetails();
 
@@ -19,5 +19,8 @@ public interface NicService {
     byte [] generatePdf(String fileName);
      byte[] generateCsv(String fileName) ;
     byte[] generateXlsx(String fileName);
+    public List<NicDto> getAllMales();
+    public List<NicDto> getAllFemales();
+
 
 }

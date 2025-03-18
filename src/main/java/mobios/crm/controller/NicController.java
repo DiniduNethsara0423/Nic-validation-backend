@@ -3,6 +3,7 @@ package mobios.crm.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mobios.crm.dto.NicDto;
+import mobios.crm.dto.NicProcessingResponseDto;
 import mobios.crm.entity.Nic;
 import mobios.crm.service.NicService;
 import org.springframework.http.HttpHeaders;
@@ -24,8 +25,9 @@ public class NicController {
 
 
     @PostMapping
-    public boolean saveCsv(@RequestParam("csv")MultipartFile[] files){
-        return nicService.saveCsv(files);
+    public ResponseEntity<NicProcessingResponseDto> saveCsv(@RequestParam("csv")MultipartFile[] files){
+        NicProcessingResponseDto responseDto=nicService.saveCsv(files);
+        return ResponseEntity.ok(responseDto);
     }
 
     @GetMapping("/get-all")
@@ -78,6 +80,14 @@ public class NicController {
                 .contentType(MediaType.TEXT_PLAIN)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=nics.xlsx")
                 .body(csv);
+    }
+    @GetMapping("/allMale")
+    public List<NicDto> getAllMales() {
+        return nicService.getAllMales();
+    }
+    @GetMapping("/allFemale")
+    public List<NicDto> getAllFemales() {
+        return nicService.getAllFemales();
     }
 
 

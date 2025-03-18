@@ -5,6 +5,7 @@ import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import lombok.RequiredArgsConstructor;
 import mobios.crm.dto.NicDto;
+import mobios.crm.dto.NicProcessingResponseDto;
 import mobios.crm.entity.File;
 import mobios.crm.entity.Nic;
 import mobios.crm.repository.FileRepository;
@@ -23,17 +24,13 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.swing.text.Document;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -47,41 +44,66 @@ public class NicServiceImpl implements NicService {
 
 
     @Override
-    public boolean saveCsv(MultipartFile[] files) {
+    public NicProcessingResponseDto saveCsv(MultipartFile[] files) {
+        int totalNicProcessed = 0;
+        int duplicateCount = 0;
+        int invalidCount = 0;
+        int savedCount = 0;
+
+        Set<String> invalidNicSet = new HashSet<>();
+
         for (MultipartFile file : files) {
             try {
-                String fileName = file.getOriginalFilename(); // Extract file name
+                String fileName = file.getOriginalFilename();
 
-                // Check if file already exists in the database
-                File existingFile = fileRepository.findByFileName(fileName).orElseGet(() -> {
-                    File newFile = new File();
-                    newFile.setFileName(fileName);
-                    return newFile;
-                });
-
+                File existingFile = fileRepository.findByFileName(fileName)
+                        .orElseGet(() -> {
+                            File newFile = new File();
+                            newFile.setFileName(fileName);
+                            return fileRepository.save(newFile);
+                        });
 
                 CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()));
                 List<String[]> csvFiles = csvReader.readAll();
 
                 for (String[] row : csvFiles) {
                     for (String column : row) {
-                        if (!column.isEmpty()) {
+                        if (column == null || column.trim().isEmpty()) {
+                            continue;
+                        }
+
+                        try {
                             Nic nic = validateNic(column);
-                            if (nic != null) {
-                                nic.setFile(existingFile); // Associate with file
-                                nicRepository.save(nic); // Save NIC record
-                                existingFile = fileRepository.save(existingFile); // Save file record
+                            totalNicProcessed++;
+
+                            Optional<Nic> existingNic = nicRepository.findByNicNumber(nic.getNicNumber());
+                            if (existingNic.isPresent()) {
+                                duplicateCount++;
+                                continue;
                             }
+
+                            nic.setFile(existingFile);
+                            nicRepository.save(nic);
+                            savedCount++;
+
+                        } catch (IllegalArgumentException e) {
+                            if (invalidNicSet.add(column)) {
+                                invalidCount++;
+                            }
+                            System.err.println("Invalid NIC found: " + column);
                         }
                     }
                 }
 
             } catch (IOException | CsvException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Error processing CSV file: " + file.getOriginalFilename(), e);
             }
         }
-        return true;
+
+        return new NicProcessingResponseDto(totalNicProcessed, duplicateCount, invalidCount, savedCount);
     }
+
+
 
 
     @Override
@@ -226,35 +248,69 @@ public class NicServiceImpl implements NicService {
         }
     }
 
+    @Override
+    public List<NicDto> getAllMales() {
+        List<NicDto> nicDtos = new ArrayList<>();
+        Iterable<Nic> nics = nicRepository.findByGender("Male");
+
+        Iterator<Nic> iterator = nics.iterator();
+        while (iterator.hasNext()) {
+            Nic next = iterator.next();
+            NicDto mappedNic = mapper.map(next, NicDto.class);
+            nicDtos.add(mappedNic);
+        }
+        return nicDtos;
+    }
+
+    @Override
+    public List<NicDto> getAllFemales() {
+        List<NicDto> nicDtos = new ArrayList<>();
+        Iterable<Nic> nics = nicRepository.findByGender("Female");
+
+        Iterator<Nic> iterator = nics.iterator();
+        while (iterator.hasNext()) {
+            Nic next = iterator.next();
+            NicDto mappedNic = mapper.map(next, NicDto.class);
+            nicDtos.add(mappedNic);
+        }
+        return nicDtos;
+    }
 
     private Nic validateNic(String nic) {
-
         Nic entity = new Nic();
         String gender = "MALE";
         int birthYear, dayValue;
 
         if (nic.matches("\\d{12}")) {
-            // Handle new NIC format (12 digits)
             birthYear = Integer.parseInt(nic.substring(0, 4));
             dayValue = Integer.parseInt(nic.substring(4, 7));
         } else if (nic.matches("\\d{9}[VXvx]")) {
-            // Handle old NIC format (9 digits + V/X)
             birthYear = 1900 + Integer.parseInt(nic.substring(0, 2));
             dayValue = Integer.parseInt(nic.substring(2, 5));
         } else {
-            return null; // Invalid NIC
+            throw new IllegalArgumentException("Invalid NIC format: " + nic);
         }
 
-        // Determine gender and adjust day value
+        // Adjust for gender
         if (dayValue > 500) {
             gender = "FEMALE";
             dayValue -= 500;
         }
 
-        // Calculate birth date
+        // Leap year check
+        boolean isLeapYear = (birthYear % 4 == 0 && birthYear % 100 != 0) || (birthYear % 400 == 0);
+        int maxDays = isLeapYear ? 366 : 365;
+
+        // 🚀 New validation: Ensure dayValue is in the valid range
+        if (dayValue < 1 || dayValue > maxDays) {
+            throw new IllegalArgumentException("Invalid day value in NIC: " + nic);
+        }
+
+        // Calculate month & day
         int month = 0, day = 0;
-        int[] daysInMonth = {0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        int[] daysInMonth = {0, 31, (isLeapYear ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
         int daysAccumulated = 0;
+
         for (int i = 1; i <= 12; i++) {
             if (dayValue <= daysAccumulated + daysInMonth[i]) {
                 month = i;
@@ -264,18 +320,16 @@ public class NicServiceImpl implements NicService {
             daysAccumulated += daysInMonth[i];
         }
 
-        // Adjust for leap years
-        boolean isLeapYear = (birthYear % 4 == 0 && birthYear % 100 != 0) || (birthYear % 400 == 0);
-        if (month == 2 && day == 29 && !isLeapYear) {
-            month = 3;
-            day = 1;
+        // 🚀 Additional safety check
+        if (month == 0 || day == 0) {
+            throw new IllegalArgumentException("Failed to determine birth date from NIC: " + nic);
         }
 
-        // Create date object
+        // Convert to LocalDate
         LocalDate birthDate = LocalDate.of(birthYear, month, day);
         int age = Period.between(birthDate, LocalDate.now()).getYears();
 
-        // Set entity properties
+        // Set properties
         entity.setAge(age);
         entity.setBirthday(birthDate.toString());
         entity.setGender(gender);

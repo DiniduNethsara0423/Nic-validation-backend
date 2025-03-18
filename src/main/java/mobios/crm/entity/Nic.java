@@ -13,6 +13,7 @@ public class Nic {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(unique = true, nullable = false)
     private String nicNumber;
     private String birthday;
     private int age;
