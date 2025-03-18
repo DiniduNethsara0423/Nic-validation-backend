@@ -171,14 +171,14 @@ public class NicServiceImpl implements NicService {
                 contentStream.setFont(PDType1Font.HELVETICA, 10);
 
                 for (NicDto nicDto : nicDtos) {
-                    if (startY < 50) { // Create new page if space is low
+                    if (startY < 50) {
                         contentStream.close();
                         page = new PDPage();
                         document.addPage(page);
                         contentStream.close();
                         try (PDPageContentStream newContentStream = new PDPageContentStream(document, page)) {
                             contentStream.setFont(PDType1Font.HELVETICA, 10);
-                            startY = 750;  // Reset start position for new page
+                            startY = 750;
                         }
                     }
 
@@ -297,11 +297,11 @@ public class NicServiceImpl implements NicService {
             dayValue -= 500;
         }
 
-        // Leap year check
+        // Leap year
         boolean isLeapYear = (birthYear % 4 == 0 && birthYear % 100 != 0) || (birthYear % 400 == 0);
         int maxDays = isLeapYear ? 366 : 365;
 
-        // 🚀 New validation: Ensure dayValue is in the valid range
+        //  dayValue is in the valid range
         if (dayValue < 1 || dayValue > maxDays) {
             throw new IllegalArgumentException("Invalid day value in NIC: " + nic);
         }
@@ -320,16 +320,16 @@ public class NicServiceImpl implements NicService {
             daysAccumulated += daysInMonth[i];
         }
 
-        // 🚀 Additional safety check
+
         if (month == 0 || day == 0) {
             throw new IllegalArgumentException("Failed to determine birth date from NIC: " + nic);
         }
 
-        // Convert to LocalDate
+        //  LocalDate
         LocalDate birthDate = LocalDate.of(birthYear, month, day);
         int age = Period.between(birthDate, LocalDate.now()).getYears();
 
-        // Set properties
+
         entity.setAge(age);
         entity.setBirthday(birthDate.toString());
         entity.setGender(gender);
